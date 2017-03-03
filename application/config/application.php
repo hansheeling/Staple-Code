@@ -40,14 +40,18 @@ return [
 	],
 
 	'layout' => [
-		'default' => 'bootstrap',
+		'default' => 'foundation',
 		'scripts' => [
-			'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js',
-			'https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js',
+			//'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js',
+			'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js',
+			'/foundation/js/vendor/modernizr.js',
+			'/foundation/js/vendor/fastclick.js',
+			'/foundation/js/foundation.min.js',
 		],
 		'styles' => [
-			'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
-			'https://netdna.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css',
+			//'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
+			//'https://netdna.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css',
+			'/foundation/css/app.css',
 		],
 		'meta_keywords' => '',
 		'meta_description' => '',
@@ -55,7 +59,7 @@ return [
 
 	'forms'	=> [
 		//'elementViewAdapter' => 'FormBootstrapViewAdapter',
-		//'elementViewAdapter' => 'FormFoundationViewAdapter',
+		'elementViewAdapter' => 'FormFoundationViewAdapter',
 	],
 
 	'db' => [

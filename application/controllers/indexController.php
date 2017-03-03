@@ -1,5 +1,6 @@
 <?php
 use Staple\Controller;
+use Staple\View;
 
 /**
  * @author Ironpilot
@@ -30,5 +31,14 @@ class indexController extends Controller
 	public function index()
 	{
 		// Index Action Code Goes Here.
+	}
+
+	public function exampleform()
+	{
+		$form = new exampleForm();
+
+		return View::create()->data([
+			'form' => $form,
+		]);
 	}
 }
