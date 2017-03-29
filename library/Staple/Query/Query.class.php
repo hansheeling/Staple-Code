@@ -33,7 +33,7 @@ use Staple\Error;
 use Staple\Exception\QueryException;
 use Staple\Pager;
 
-abstract class Query
+abstract class Query implements IQuery
 {
 	
 	/**
@@ -44,24 +44,24 @@ abstract class Query
 	
 	/**
 	 * The Connection database object. A database object is required to properly escape input.
-	 * @var Connection
+	 * @var IConnection
 	 */
 	protected $connection;
 	
 	/**
 	 * An array of Where Clauses. The clauses are additive, using the AND  conjunction.
-	 * @var array[Staple_Query_Condition]
+	 * @var Condition[]
 	 */
 	protected $where = array();
 
 	/**
 	 * @param string $table
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @throws QueryException
 	 */
-	public function __construct($table = NULL, Connection $db = NULL)
+	public function __construct($table = NULL, IConnection $db = NULL)
 	{
-		if($db instanceof Connection)
+		if($db instanceof IConnection)
 		{
 			$this->setConnection($db);
 		}
@@ -75,7 +75,7 @@ abstract class Query
 				throw new QueryException('Unable to find a database connection.', Error::DB_ERROR, $e);
 			}
 		}
-		if(!($this->connection instanceof Connection))
+		if(!($this->connection instanceof IConnection))
 		{
 			throw new QueryException('Unable to create database object', Error::DB_ERROR);
 		}
@@ -104,11 +104,20 @@ abstract class Query
 	}
 
 	/**
-	 * @return Connection $db
+	 * @return IConnection $db
 	 */
 	public function getConnection()
 	{
 		return $this->connection;
+	}
+
+	/**
+	 * Return the array of where conditions currently attached to the query.
+	 * @return Condition[]
+	 */
+	public function getWhere()
+	{
+		return $this->where;
 	}
 
 	/**
@@ -141,10 +150,10 @@ abstract class Query
 	}
 
 	/**
-	 * @param Connection $connection
+	 * @param IConnection $connection
 	 * @return $this
 	 */
-	public function setConnection(Connection $connection)
+	public function setConnection(IConnection $connection)
 	{
 		$this->connection = $connection;
 		return $this;
@@ -157,18 +166,18 @@ abstract class Query
 	
 	/**
 	 * Executes the query and returns the result.
-	 * @param Connection $connection - the database connection to execute the quote upon.
+	 * @param IConnection $connection - the database connection to execute the quote upon.
 	 * @return Statement | bool
 	 * @throws Exception
 	 */
-	public function execute(Connection $connection = NULL)
+	public function execute(IConnection $connection = NULL)
 	{
 		if(isset($connection))
 			$this->setConnection($connection);
 
-		if($this->connection instanceof Connection)
+		if($this->connection instanceof IConnection)
 		{
-			return $this->connection->query($this->build());
+			return $this->connection->query($this);
 		}
 		else
 		{
@@ -180,9 +189,9 @@ abstract class Query
 			{
 				throw new QueryException('No Database Connection', Error::DB_ERROR);
 			}
-			if($this->connection instanceof Connection)
+			if($this->connection instanceof IConnection)
 			{
-				return $this->connection->query($this->build());
+				return $this->connection->query($this);
 			}
 		}
 		return false;
@@ -191,12 +200,12 @@ abstract class Query
 	/**
 	 * Prepares the query before executing and returns the result.
 	 *
-	 * @param Connection $connection
+	 * @param IConnection $connection
 	 * @return Statement
 	 * @throws QueryException
 	 * @throws \PDOException
 	 */
-	public function prepareAndExecute(Connection $connection = null)
+	public function prepareAndExecute(IConnection $connection = null)
 	{
 		if(isset($connection))
 			$this->setConnection($connection);
@@ -381,13 +390,13 @@ abstract class Query
 	/**
 	 * Converts a PHP data type into a compatible MySQL string.
 	 * @param mixed $inValue
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @throws QueryException
 	 * @return string
 	 */
-	public static function convertTypes($inValue, Connection $db = NULL)
+	public static function convertTypes($inValue, IConnection $db = NULL)
 	{
-		if(!($db instanceof Connection))
+		if(!($db instanceof IConnection))
 		{
 			try{
 				$db = Connection::get();
@@ -455,12 +464,12 @@ abstract class Query
 	 *
 	 * @param string $table
 	 * @param array $columns
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @param array | string $order
 	 * @param Pager | int $limit
 	 * @return Select
 	 */
-	public static function select($table = NULL, array $columns = NULL, Connection $db = NULL, $order = NULL, $limit = NULL)
+	public static function select($table = NULL, array $columns = NULL, IConnection $db = NULL, $order = NULL, $limit = NULL)
 	{
 		return new Select($table, $columns, $db, $order, $limit);
 	}
@@ -470,11 +479,11 @@ abstract class Query
 	 *
 	 * @param string $table
 	 * @param array $data
-	 * @param Connection
+	 * @param IConnection
 	 * @param string $priority
 	 * @return Insert
 	 */
-	public static function insert($table = NULL, $data = NULL, Connection $db = NULL, $priority = NULL)
+	public static function insert($table = NULL, $data = NULL, IConnection $db = NULL, $priority = NULL)
 	{
 		return new Insert($table, $data, $db, $priority);
 	}
@@ -484,12 +493,12 @@ abstract class Query
 	 *
 	 * @param string $table
 	 * @param array $data
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @param array | string $order
 	 * @param Pager | int $limit
 	 * @return Update
 	 */
-	public static function update($table = NULL, array $data = NULL, Connection $db = NULL, $order = NULL, $limit = NULL)
+	public static function update($table = NULL, array $data = NULL, IConnection $db = NULL, $order = NULL, $limit = NULL)
 	{
 		return new Update($table, $data, $db, $order, $limit);
 	}
@@ -498,10 +507,10 @@ abstract class Query
 	 * Construct and return a Delete query object.
 	 *
 	 * @param string $table
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @return Delete
 	 */
-	public static function delete($table = NULL, Connection $db = NULL)
+	public static function delete($table = NULL, IConnection $db = NULL)
 	{
 		return new Delete($table, $db);
 	}
@@ -510,10 +519,10 @@ abstract class Query
 	 * Construct and return a Union query object
 	 *
 	 * @param array $queries
-	 * @param Connection $db
+	 * @param IConnection $db
 	 * @return Union
 	 */
-	public static function union(array $queries = array(), Connection $db = NULL)
+	public static function union(array $queries = array(), IConnection $db = NULL)
 	{
 		return new Union($queries, $db);
 	}
@@ -522,10 +531,10 @@ abstract class Query
 	 * Create and return a Query DataSet object
 	 *
 	 * @param array $data
-	 * @param Connection $connection
+	 * @param IConnection $connection
 	 * @return DataSet
 	 */
-	public static function dataSet(array $data = NULL, Connection $connection = NULL)
+	public static function dataSet(array $data = NULL, IConnection $connection = NULL)
 	{
 		return new DataSet($data,$connection);
 	}
@@ -533,10 +542,10 @@ abstract class Query
     /**
      * Execute a raw SQL statement
      * @param string | Query $statement
-     * @param Connection $connection
+     * @param IConnection $connection
      * @return Statement
      */
-	public static function raw($statement, Connection $connection = NULL)
+	public static function raw($statement, IConnection $connection = NULL)
 	{
         if(isset($connection))
             return $connection->query($statement);
@@ -546,71 +555,26 @@ abstract class Query
 
 	/**
 	 * Create a prepared statement for a stored procedure call.
-	 * @param $name
+	 * @param string $procedureName
 	 * @param array $parameters
-	 * @param Connection $connection
+	 * @param IConnection $connection
 	 * @param array $driverOptions
 	 * @return PDOStatement
 	 * @throws QueryException
 	 */
-	public static function procedure($name, array $parameters = NULL, Connection $connection = NULL, array $driverOptions = [])
+	public static function procedure($procedureName, array $parameters = NULL, IConnection $connection = NULL, array $driverOptions = [])
 	{
-		if(isset($connection))
-		{
-			$myConn = $connection;
-		}
-		else
-		{
-			$myConn = Connection::get();
-		}
+		if(!isset($connection))
+			$connection = Connection::get();
 
-		if(isset($parameters))
-		{
-			$params = '(';
+		$execStatement = self::getConnectionSpecificExecuteStatement($procedureName, $parameters, $connection);
 
-			$numericKeys = false;
-			foreach ($parameters as $key=>$value)
-			{
-				if (is_int($key))
-				{
-					$numericKeys = true;
-				}
-				elseif(substr($key,0,1) != ':')
-				{
-					unset($parameters[$key]);
-					$parameters[':'.$key] = $value;
-				}
-				else
-				{
-					if ($numericKeys == true)
-					{
-						throw new QueryException('You cannot mix numeric and named parameter keys.');
-					}
-				}
-			}
-
-			$keys = array_keys($parameters);
-			if($numericKeys == true)
-			{
-				for($i = 0; $i<count($keys); $i++)
-				{
-					$params .= '?, ';
-				}
-			}
-			else
-				$params .= implode(', ',$keys);
-
-			$params .= ')';
-		}
-		else
-		{
-			$params = '()';
-		}
-
-		$driverOptions[PDO::FETCH_CLASS] = '\Staple\Query\Statement';
+		//SqlSrv Cannot return a different object yet.
+		if($connection->getDriver() != Connection::DRIVER_SQLSRV)
+			$driverOptions[PDO::FETCH_CLASS] = '\Staple\Query\Statement';
 
 		//Prepare Statement
-		$stmt = $myConn->prepare('CALL '.$name.$params, $driverOptions);
+		$stmt = $connection->prepare($execStatement, $driverOptions);
 
 		//Bind Values
 		if(isset($parameters))
@@ -632,5 +596,118 @@ abstract class Query
 		}
 
 		return $stmt;
+	}
+
+	/**
+	 * Get connection specific execute statement string
+	 * @param string $procedureName
+	 * @param array &$parameters
+	 * @param IConnection $connection
+	 * @return string
+	 * @throws QueryException
+	 */
+	public static function getConnectionSpecificExecuteStatement($procedureName, array &$parameters, IConnection $connection)
+	{
+		//Grab the appropriate exec string
+		switch($connection->getDriver())
+		{
+			case Connection::DRIVER_SQLSRV:
+				return self::composeSqlSrvProcedureString($procedureName, $parameters);
+				break;
+			case Connection::DRIVER_MYSQL:
+				return self::composeMySqlProcedureString($procedureName, $parameters);
+				break;
+			default:
+				throw new QueryException('Could not find a string generator for your database driver.');
+				break;
+		}
+	}
+
+	/**
+	 * Generate the MySQL stored procedure execution string.
+	 * @param string $procedureName
+	 * @param array &$parameters
+	 * @return string
+	 * @throws QueryException
+	 */
+	public static function composeMySqlProcedureString($procedureName, array &$parameters)
+	{
+		$params = '(';
+
+		$numericKeys = false;
+		foreach ($parameters as $key=>$value)
+		{
+			if (is_int($key))
+			{
+				$numericKeys = true;
+				break;
+			}
+			elseif(substr($key,0,1) != ':')
+			{
+				unset($parameters[$key]);
+				$parameters[':'.$key] = $value;
+			}
+			else
+			{
+				if ($numericKeys == true)
+				{
+					throw new QueryException('You cannot mix numeric and named parameter keys.');
+				}
+			}
+		}
+
+		$keys = array_keys($parameters);
+		if($numericKeys == true)
+		{
+			for($i = 0; $i<count($keys); $i++)
+			{
+				$params .= '?, ';
+			}
+			$params = substr($params,0,strlen($params)-2);
+		}
+		else
+			$params .= implode(', ',$keys);
+
+		$params .= ')';
+
+		return 'CALL '.$procedureName.$params;
+	}
+
+	/**
+	 * Generate the SQL Server stored procedure execution string.
+	 * @param string $procedureName
+	 * @param array &$parameters
+	 * @return string
+	 * @throws QueryException
+	 */
+	public static function composeSqlSrvProcedureString($procedureName, array &$parameters)
+	{
+		$params = ' ';
+		foreach ($parameters as $key=>$value)
+		{
+			if (is_int($key))
+				throw new QueryException('You must specify the procedure variable name as the array key.');
+			elseif(substr($key,0,1) != '@')
+			{
+				unset($parameters[$key]);
+				$parameters['@'.$key] = $value;
+			}
+		}
+
+		$keys = array_keys($parameters);
+		$params .= implode(' = ?, ',$keys);
+		$params .= ' = ?';
+
+		//Fix parameters array for PDO binding
+		$parameters = array_values($parameters);
+		for($i = count($parameters); $i > 0; $i--)
+		{
+			$tmp = $parameters[$i-1];
+			unset($parameters[$i-1]);
+			$parameters[$i] = $tmp;
+		}
+		ksort($parameters);
+
+		return 'EXEC '.$procedureName.$params;
 	}
 }
