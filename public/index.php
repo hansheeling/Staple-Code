@@ -1,4 +1,5 @@
 <?php
+
 defined('FOLDER_ROOT')
 	|| define('FOLDER_ROOT', realpath(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR));
 
@@ -18,3 +19,4 @@ require_once LIBRARY_ROOT . 'Staple' . DIRECTORY_SEPARATOR . 'Main.class.php';
 
 $main = \Staple\Main::get();
 $main->run();
+
